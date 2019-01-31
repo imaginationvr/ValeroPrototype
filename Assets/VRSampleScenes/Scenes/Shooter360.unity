@@ -2212,6 +2212,14 @@ PrefabInstance:
       propertyPath: m_Reticle
       value: 
       objectReference: {fileID: 319848117}
+    - target: {fileID: 11415056, guid: 565fa42cafc247f4f87fd720db4871ad, type: 3}
+      propertyPath: usingVRHardware
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11415056, guid: 565fa42cafc247f4f87fd720db4871ad, type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 319848115}
     - target: {fileID: 11483292, guid: 565fa42cafc247f4f87fd720db4871ad, type: 3}
       propertyPath: m_Camera
       value: 

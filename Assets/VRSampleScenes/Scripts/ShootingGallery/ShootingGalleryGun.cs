@@ -9,6 +9,7 @@ namespace VRStandardAssets.ShootingGallery
     // scenes, including it's movement and shooting.
     public class ShootingGalleryGun : MonoBehaviour
     {
+        [SerializeField] private bool usingVRHardware = true;                           // Are we using Vive hardware or playtesting with kb+m?
         [SerializeField] private float m_DefaultLineLength = 70f;                       // How far the line renderer will reach if a target isn't hit.
         [SerializeField] private float m_Damping = 0.5f;                                // The damping with which this gameobject follows the camera.
         [SerializeField] private float m_GunFlareVisibleSeconds = 0.07f;                // How long, in seconds, the line renderer and flare are visible for with each shot.
@@ -24,6 +25,7 @@ namespace VRStandardAssets.ShootingGallery
         [SerializeField] private Reticle m_Reticle;                                     // This is what the gun arm should be aiming at.
         [SerializeField] private ParticleSystem m_FlareParticles;                       // This particle system plays when the gun fires.
         [SerializeField] private GameObject[] m_FlareMeshes;                            // These are meshes of which one is randomly activated when the gun fires.
+        [SerializeField] private Transform m_Camera;                                    // Camera for when we aren't using vr controls
 
 
         private const float k_DampingCoef = -20f;                                       // This is the coefficient used to ensure smooth damping of this gameobject.
@@ -37,31 +39,61 @@ namespace VRStandardAssets.ShootingGallery
 
         private void OnEnable ()
         {
-            m_VRInput.OnDown += HandleDown;
+            if(usingVRHardware)
+            {
+                m_VRInput.OnDown += HandleDown;
+            }
         }
 
 
         private void OnDisable ()
         {
-            m_VRInput.OnDown -= HandleDown;
+            if (usingVRHardware)
+            {
+                m_VRInput.OnDown -= HandleDown;
+            }
         }
 
 
         private void Update()
         {
-            // Smoothly interpolate this gameobject's rotation towards that of the user/camera.
-            transform.rotation = Quaternion.Slerp(transform.rotation, UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.Head),
+            if (usingVRHardware)
+            {
+                // Smoothly interpolate this gameobject's rotation towards that of the user/camera.
+                transform.rotation = Quaternion.Slerp(transform.rotation, UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.Head),
                 m_Damping * (1 - Mathf.Exp(k_DampingCoef * Time.deltaTime)));
-            
-            // Move this gameobject to the camera.
-            transform.position = m_CameraTransform.position;
 
-            // Find a rotation for the gun to be pointed at the reticle.
-            Quaternion lookAtRotation = Quaternion.LookRotation (m_Reticle.ReticleTransform.position - m_GunContainer.position);
+                // Move this gameobject to the camera.
+                transform.position = m_CameraTransform.position;
 
-            // Smoothly interpolate the gun's rotation towards that rotation.
-            m_GunContainer.rotation = Quaternion.Slerp (m_GunContainer.rotation, lookAtRotation,
-                m_GunContainerSmoothing * Time.deltaTime);
+                // Find a rotation for the gun to be pointed at the reticle.
+                Quaternion lookAtRotation = Quaternion.LookRotation(m_Reticle.ReticleTransform.position - m_GunContainer.position);
+
+                // Smoothly interpolate the gun's rotation towards that rotation.
+                m_GunContainer.rotation = Quaternion.Slerp(m_GunContainer.rotation, lookAtRotation,
+                    m_GunContainerSmoothing * Time.deltaTime);
+            }
+            else
+            {
+                // Smoothly interpolate this gameobject's rotation towards that of the user/camera.
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(transform.position - m_Camera.position),
+                m_Damping * (1 - Mathf.Exp(k_DampingCoef * Time.deltaTime)));
+
+                // Move this gameobject to the camera.
+                transform.position = m_CameraTransform.position;
+
+                // Find a rotation for the gun to be pointed at the reticle.
+                Quaternion lookAtRotation = Quaternion.LookRotation(m_Reticle.ReticleTransform.position - m_GunContainer.position);
+
+                // Smoothly interpolate the gun's rotation towards that rotation.
+                m_GunContainer.rotation = Quaternion.Slerp(m_GunContainer.rotation, lookAtRotation,
+                    m_GunContainerSmoothing * Time.deltaTime);
+
+                if (Input.GetKeyDown(KeyCode.Mouse0))
+                {
+                    HandleDown();
+                }
+            }
         }
 
 
